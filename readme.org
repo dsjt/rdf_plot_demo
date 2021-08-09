@@ -44,6 +44,10 @@ python Main.py -i ./data/donna.ttl -o ./data/donna.eps
 [[file:data/donna.eps]]
 
 出力ファイルをsvgファイルへ変換(Inkscapeを使用)
+#+BEGIN_SRC dos
+inkscape.com data\donna.eps -D -o data\donna.svg
+#+END_SRC
+
 [[file:data/donna.svg]]
 
 

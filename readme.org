@@ -1,3 +1,58 @@
 # -*- coding: utf-8 -*-
 * 概要
-turtle形式のファイルを読み込み、作図するデモ。
+turtle形式のファイルを読み込み、eps画像を出力するデモ。
+
+* 用法
+#+BEGIN_SRC text
+usage: Main.py [-h] [-i INPUT] [-o OUTPUT]
+
+turtle形式のrdfを作図するデモ
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -i INPUT, --input INPUT
+                        入力ファイル(turtle)
+  -o OUTPUT, --output OUTPUT
+                        出力ファイル(eps)
+#+END_SRC
+
+* サンプル
+コマンド例
+
+#+BEGIN_SRC sh
+python Main.py -i ./data/donna.ttl -o ./data/donna.eps
+#+END_SRC
+
+入力ファイル(donna.ttl)
+#+BEGIN_SRC ttl
+@prefix : <http://example.org/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<http://example.org/donna> a foaf:Person ;
+    foaf:mbox <mailto:donna@example.org> ;
+    foaf:name "Donna Fales" ;
+    foaf:nick "donna"@ed .
+
+<http://example.org/edward> a foaf:Person ;
+    foaf:mbox <mailto:e.scissorhands@example.org> ;
+    foaf:name "Edward Scissorhands" ;
+    foaf:nick "ed"^^xsd:string .
+#+END_SRC
+
+出力ファイル(donna.svg)
+[[file:data/donna.eps]]
+
+出力ファイルをsvgファイルへ変換(Inkscapeを使用)
+[[file:data/donna.svg]]
+
+
+** 補足
+- 元のRDF(donna.ttl)は、rdflibのサンプルである（[[https://rdflib.readthedocs.io/en/stable/gettingstarted.html][Getting started with RDFLib — rdflib 5.0.0 documentation]]）。
+
+
+* バージョン
+以下で動作確認
+
+- python==3.9.2
+- rdflib==5.0.0

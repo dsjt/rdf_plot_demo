@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from EpsUtil import text_length_in_picture
 
 class Resource(object):

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from EpsUtil import draw_lines
 from EpsUtil import draw_text
 from Resource import Resource

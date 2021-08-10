@@ -3,12 +3,14 @@ from rdflib import Literal, URIRef
 from EpsUtil import draw_rectangle
 from EpsUtil import draw_text
 from EpsUtil import text_length_in_picture
+from Resource import Resource
 from NodeType import NodeType
 
 import logging
 logger = logging.getLogger(__name__)
 colors = ["0.9 0.8 0.9", "0.8 0.9 0.9", "0.9 0.9 0.8"]
-class ResourceNode(object):
+
+class ResourceNode(Resource):
     """
     グラフ上のRDFリソースを表現するオブジェクト。
     """
@@ -16,7 +18,7 @@ class ResourceNode(object):
     MIN_WIDTH = 24
     HEIGHT = 24
 
-    def __init__(self, data, x=0, y=0, label="ABC",
+    def __init__(self, data, x=0, y=0, label=None,
                  node_type=None):
         """
 
@@ -31,12 +33,10 @@ class ResourceNode(object):
         pos:
             座標
         """
-        self.data = data
-        self.x, self.y = x, y
-        self.label = label
-        self.node_type = node_type
+        super().__init__(data, label=label)
 
-        self.len_x = text_length_in_picture(self.label)
+        self.x, self.y = x, y
+        self.node_type = node_type
         self.width = self.len_x+10
         self.height = 28
 

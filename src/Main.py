@@ -12,6 +12,7 @@ from Mapping import Mapping
 from ResourceNode import ResourceNode
 from ResourceLink import ResourceLink
 from NodeType import NodeType
+from DiGraph import DiGraph
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -39,17 +40,18 @@ def load_turtle(fn):
     logger.info("turtleのロード完了")
     return g
 
-def get_start_point(E: list[list]):
+def get_start_point(E, V):
     """
     隣接リストを受け取り、入次数が小さいノードを返す。
     """
     c = Counter()
-    for targets in E:
+    for targets in E.values():
         c += Counter(targets)
-
-    sorted_V = sorted((c[i], i) for i in range(len(E)))
+    sorted_V = sorted((c[i], i) for i in range(V))
     min_in_degree, _ = sorted_V[0]
-    return [k for v, k in sorted_V if min_in_degree == v]
+    ret = [k for v, k in sorted_V if min_in_degree == v]
+    logger.info(f"DAGの出発ノードの一覧を取得 {ret}")
+    return ret
 
 def main():
     args = parse_arguments()
@@ -58,92 +60,52 @@ def main():
     g = load_turtle(args.input)
     mn = g.namespace_manager
 
-
     # 隣接リストによるグラフ構造の作成
-    mapping = Mapping()
-    for s, p, o in g:
-        if p == RDF.type:
-            continue
-        mapping.register(s)
-        mapping.register(o)
-    E = [[] for _ in range(len(mapping))]
-    for s, p, o in g:
-        if p == RDF.type:
-            continue
-        si = mapping(s)
-        oi = mapping(o)
-        E[si].append(oi)
-    logger.info("隣接リストの構成完了")
-    # 型は取り分けておく
+    tmap = Mapping()            # 型のマッピング
+    rmap = Mapping()            # 型以外のリソースのマッピング
     object_class = {}
-    for s, o in g[:RDF.type:]:
-        object_class[mapping(s)] = mapping(o)
 
-    # グラフから次数が小さいノードを取得する。複数可。
-    roots = get_start_point(E)
-    logger.info(roots)
-    logger.info([(i, mapping.rev(i)) for i in roots])
+    dg = DiGraph()
+    for s, p, o in g:
+        if p == RDF.type:
+            si = rmap.register(s)
+            oi = tmap.register(o)
+            object_class[si] = oi
+        else:
+            si = rmap.register(s)
+            oi = rmap.register(o)
+            dg.add_link(si, oi)
+    logger.info("DAGの構成完了")
 
     # 描画位置の計算
     x, y = 0, 0
-    dx, dy = 10, 40
-    visited = [False]*len(E)# 訪問済みオブジェクトを管理
+    dy = 40
     # 描画オブジェクト群
-    resource_nodes = [None]*len(E)
+    resource_nodes = [None]*dg.V
 
-    # 描画オブジェクトの作成とy座標の決定
-    stack = roots.copy()
-    while stack:
-        v = stack.pop()
-        if visited[v]:
-            continue
-        # dfs追加
-        for u in E[v]:
-            if visited[u]:
-                continue    # ループは切る
-            stack.append(u)
-        visited[v]=True
-
+    for v in dg.pre_order_gen():
         # ノードの作成
-        obj = mapping.rev(v)
+        obj = rmap.rev(v)
         rn = ResourceNode(obj, label=obj.n3(mn))
         resource_nodes[v] = rn
-
         # yの決定
         rn.y = y
         y -= dy
 
     # xの決定
-    visited = [False]*len(E)
-    stack = deque(roots)
-    while stack:
-        v = stack.popleft()
-        if visited[v]:
-            continue
-        for u in E[v]:
-            if visited[u]:
-                continue
-            stack.append(u)
-        visited[v] = True
-
-        if len(E[v]) == 0:
-            continue
-
-        for u in E[v]:
-            lm = 0
-            for p in g[mapping.rev(v)::mapping.rev(u)]:
-                lm = max(text_length_in_picture(p.n3(mn)), lm)
-        for u in E[v]:
+    for v in dg.bfs_order_gen():
+        lm = max([text_length_in_picture(p.n3(mn))
+                  for u in dg.E[v]
+                  for p in g[rmap.rev(v)::rmap.rev(u)]],
+                 default=0)
+        for u in dg.E[v]:
             resource_nodes[u].x = resource_nodes[v].x+lm+20\
                 +min(10, resource_nodes[v].width*0.25)
 
-
-    logger.info("\n".join([str(rn) for rn in resource_nodes]))
-
     # 型の追加
     class_nodes = [None]*len(object_class)
-    for i, (v, cu) in enumerate(object_class.items()):
-        obj = mapping.rev(cu)
+    for i, (v, u) in enumerate(object_class.items()):
+        obj = tmap.rev(u)
         cn = ResourceNode(obj, label=obj.n3(mn),
                           node_type=NodeType.CLASS)
         cn.x = resource_nodes[v].x + resource_nodes[v].width + 10
@@ -151,31 +113,15 @@ def main():
         class_nodes[i] = cn
 
     # リンク用のオブジェクトの作成
-    visited = [False]*len(E)
-    stack = roots.copy()
+    visited = [False]*len(dg.E)
     links = []
-    while stack:
-        v = stack.pop()
-        if visited[v]:
+    for s, p, o in g:
+        if p == RDF.type:
             continue
-        # dfs追加
-        for u in E[v]:
-            if visited[u]:
-                continue    # ループは切る
-            stack.append(u)
-        visited[v]=True
-
-
-        for u in E[v]:
-            if visited[u]:
-                continue
-            for p in g[mapping.rev(v)::mapping.rev(u)]:
-                link = ResourceLink(resource_nodes[v],
-                                    resource_nodes[u],
-                                    p,
-                                    label=p.n3(mn))
-                links.append(link)
-                break
+        link = ResourceLink(resource_nodes[rmap(s)],
+                            resource_nodes[rmap(o)],
+                            p, label=p.n3(mn))
+        links.append(link)
 
     eps = export_eps(resource_nodes+class_nodes, links)
     print(eps)

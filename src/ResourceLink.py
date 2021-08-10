@@ -1,24 +1,19 @@
 from EpsUtil import draw_lines
 from EpsUtil import draw_text
+from Resource import Resource
 
 import logging
 logger = logging.getLogger(__name__)
 
-class ResourceLink(object):
+class ResourceLink(Resource):
     """
     グラフ上のRDFリソース間のリンクを表現するオブジェクト
     """
 
     def __init__(self, subj, obj, data, label=None):
+        super().__init__(data, label)
         self.subj = subj
         self.obj = obj
-
-        self.data = data
-
-        if label is not None:
-            self.label = label
-        else:
-            self.label = data.n3()
         pass
 
     def connection(self, obj):

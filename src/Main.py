@@ -34,7 +34,7 @@ def parse_arguments():
 
 def load_turtle(fn):
     """
-    パスを引数で受け取り、turtleファオイルを読み込んで、rdflibグラフオブジェクトを返す。
+    パスを引数で受け取り、turtleファイルを読み込んで、rdflibグラフオブジェクトを返す。
     """
     g = rdflib.Graph().parse(fn, format="turtle")
     logger.info("turtleのロード完了")
@@ -75,7 +75,7 @@ def main():
             si = rmap.register(s)
             oi = rmap.register(o)
             dg.add_link(si, oi)
-    logger.info("DAGの構成完了")
+    logger.info("グラフの構成完了")
 
     # 描画位置の計算
     x, y = 0, 0
